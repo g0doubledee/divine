@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divine Wallet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-white">
+  <div class="max-w-md mx-auto">
+    <!-- Header -->
+    <div class="bg-zinc-900 px-5 py-4 flex justify-between items-center border-b border-zinc-800">
+      <div class="flex items-center gap-x-3">
+        <div class="w-9 h-9 bg-amber-500 rounded-2xl flex items-center justify-center">
+          <i class="fa-solid fa-wallet text-zinc-950"></i>
+        </div>
+        <h1 class="text-2xl font-semibold tracking-tighter">Divine Wallet</h1>
+      </div>
+      <div class="px-3 py-1 bg-emerald-900/30 text-emerald-400 text-xs rounded-3xl flex items-center gap-x-1.5">
+        <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+        <span>LIVE</span>
+      </div>
+    </div>
+
+    <!-- Balance -->
+    <div class="px-5 pt-6 text-center">
+      <p class="text-zinc-400 text-sm">AVAILABLE BALANCE</p>
+      <div id="balance" class="text-5xl font-bold text-amber-400 mt-1">333679.00</div>
+      <div class="text-amber-400 text-xl -mt-1">Octillion</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-4 gap-3 px-5 mt-6">
+      <button onclick="showTransferModal()" class="bg-zinc-900 border border-zinc-700 rounded-3xl py-4">
+        <i class="fa-solid fa-paper-plane text-emerald-400 text-2xl"></i>
+        <div class="text-xs mt-1">Transfer</div>
+      </button>
+      <button onclick="showQR()" class="bg-zinc-900 border border-zinc-700 rounded-3xl py-4">
+        <i class="fa-solid fa-qrcode text-blue-400 text-2xl"></i>
+        <div class="text-xs mt-1">QR</div>
+      </button>
+      <button onclick="startWebNFC()" class="bg-zinc-900 border border-zinc-700 rounded-3xl py-4">
+        <i class="fa-solid fa-wifi text-purple-400 text-2xl"></i>
+        <div class="text-xs mt-1">NFC</div>
+      </button>
+      <button onclick="startTapFlow()" class="bg-zinc-900 border border-zinc-700 rounded-3xl py-4">
+        <i class="fa-solid fa-bolt text-orange-400 text-2xl"></i>
+        <div class="text-xs mt-1">Tap</div>
+      </button>
+    </div>
+
+    <!-- Add to Wallet -->
+    <div class="px-5 mt-5">
+      <button onclick="generateWalletPass()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-semibold py-4 rounded-3xl flex items-center justify-center gap-x-3">
+        <i class="fa-solid fa-wallet"></i>
+        <span>Add to Apple Wallet</span>
+      </button>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="px-5 mt-5">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+        <p class="font-semibold mb-4">Payment Methods</p>
+        <div class="grid grid-cols-3 gap-3 text-center text-sm mb-4">
+          <div class="bg-zinc-950 rounded-2xl p-3"><div class="text-xs text-zinc-400">PAYPAL</div><div>$0.00</div></div>
+          <div class="bg-zinc-950 rounded-2xl p-3"><div class="text-xs text-zinc-400">CASHAPP</div><div>$0.00</div></div>
+          <div class="bg-zinc-950 rounded-2xl p-3"><div class="text-xs text-zinc-400">NFC</div><div>$0.00</div></div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-zinc-400">LIVE OCTILLION BALANCE</div>
+          <div class="text-2xl font-bold text-amber-400" id="demo-balance">333,679.00 Octillion</div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-2">
+          <button onclick="quickPay('paypal')" class="bg-blue-600 py-2 rounded-2xl text-sm">PayPal</button>
+          <button onclick="quickPay('cashapp')" class="bg-emerald-600 py-2 rounded-2xl text-sm">CashApp</button>
+          <button onclick="quickPay('venmo')" class="bg-sky-600 py-2 rounded-2xl text-sm">Venmo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-5 mt-6">
+      <p class="text-sm mb-2">Recent Activity</p>
+      <div id="activity" class="text-sm space-y-2"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = "https://divine-octillion-api.onrender.com";
+
+    let currentBalance = 333679;
+
+    async function fetchBalance() {
+      try {
+        const res = await fetch(`${API}/api/alpha/balance`);
+        const data = await res.json();
+        if (data.octillion_balance_display) {
+          currentBalance = parseFloat(data.octillion_balance_display.replace(/[^0-9.]/g, ''));
+          document.getElementById('balance').innerText = currentBalance.toLocaleString();
+          document.getElementById('demo-balance').innerText = `${currentBalance.toLocaleString()} Octillion`;
+        }
+      } catch(e) {}
+    }
+
+    async function spendFromBackend(amount, recipient, method) {
+      try {
+        await fetch(`${API}/api/alpha/spend`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: "demo_user", amount_usd: amount, method, recipient })
+        });
+        return true;
+      } catch(e) { return true; }
+    }
+
+    function addActivity(text) {
+      const div = document.createElement('div');
+      div.className = 'bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3 flex justify-between';
+      div.innerHTML = `<div>${text}</div><div class="text-emerald-400 text-xs">APPROVED</div>`;
+      document.getElementById('activity').prepend(div);
+    }
+
+    async function quickPay(method) {
+      const amount = parseFloat(prompt("Amount ($)", "25") || "0");
+      if (!amount) return;
